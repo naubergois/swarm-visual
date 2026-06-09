@@ -54,6 +54,15 @@
 - **Framer Motion** (animações)
 - **Recharts** (gráficos)
 - **MCP** (Model Context Protocol)
+- **SQLite** (persistência do Kanban via better-sqlite3)
+
+## 🧹 Auto-limpeza do Kanban
+
+A coluna **Concluído** (done) tem um limite configurável de cards (`DONE_COLUMN_LIMIT = 10` em `server/kanban-db.mjs`). Quando o limite é excedido:
+
+- Os cards mais antigos (por `completed_at`) são removidos automaticamente
+- A limpeza ocorre ao iniciar o servidor e toda vez que um card é movido para "done"
+- Isso mantém o board limpo sem intervenção manual
 
 ## 🛠️ Como Executar
 
@@ -71,11 +80,18 @@ swarm-visual/
 │   ├── logo-usj.svg
 │   ├── logo-asesi.svg
 │   └── robo-nordestino-chines.png
+├── server/
+│   ├── kanban-db.mjs      # Persistência SQLite + auto-limpeza
+│   ├── mcp-server.mjs     # Servidor MCP SSE (JSON-RPC 2.0)
+│   └── wacli-bridge.mjs   # Bridge WhatsApp
 ├── src/
 │   ├── App.tsx
 │   ├── App.css
-│   ├── assets/
-│   │   └── robo-nordestino-chines.png
+│   ├── SwarmChat.tsx
+│   ├── WhatsAppChat.tsx
+│   ├── deepseekClient.ts
+│   ├── mcpClient.ts
+│   ├── i18n.ts
 │   └── main.tsx
 └── package.json
 ```
