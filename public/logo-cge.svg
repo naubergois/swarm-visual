@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- CGE - Controladoria Geral do Estado -->
+  <circle cx="100" cy="100" r="95" fill="#0d4f2b" stroke="#d4af37" stroke-width="3"/>
+  <!-- Escudo -->
+  <path d="M100 35 L140 55 L140 105 Q140 140 100 165 Q60 140 60 105 L60 55 Z" fill="none" stroke="#d4af37" stroke-width="3"/>
+  <!-- Balança (símbolo de controle/auditoria) -->
+  <line x1="100" y1="60" x2="100" y2="120" stroke="#ffffff" stroke-width="2.5"/>
+  <line x1="75" y1="80" x2="125" y2="80" stroke="#ffffff" stroke-width="2.5"/>
+  <!-- Pratos da balança -->
+  <path d="M70 80 L65 95 L85 95 L80 80" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <path d="M120 80 L115 95 L135 95 L130 80" fill="none" stroke="#ffffff" stroke-width="2"/>
+  <!-- Lupa (auditoria) -->
+  <circle cx="100" cy="110" r="12" fill="none" stroke="#d4af37" stroke-width="2"/>
+  <line x1="109" y1="119" x2="118" y2="128" stroke="#d4af37" stroke-width="2.5"/>
+  <!-- Texto CGE -->
+  <text x="100" y="188" text-anchor="middle" font-family="serif" font-size="22" font-weight="bold" fill="#ffffff">CGE</text>
+</svg>

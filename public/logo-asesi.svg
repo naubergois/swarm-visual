@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- ASESI - Assessoria Especial de Sistemas de Informação -->
+  <circle cx="100" cy="100" r="95" fill="#2c3e50" stroke="#3498db" stroke-width="3"/>
+  <!-- Rede / Nós (sistemas de informação) -->
+  <circle cx="100" cy="60" r="8" fill="#3498db"/>
+  <circle cx="65" cy="95" r="8" fill="#3498db"/>
+  <circle cx="135" cy="95" r="8" fill="#3498db"/>
+  <circle cx="75" cy="135" r="8" fill="#3498db"/>
+  <circle cx="125" cy="135" r="8" fill="#3498db"/>
+  <!-- Conexões -->
+  <line x1="100" y1="60" x2="65" y2="95" stroke="#ecf0f1" stroke-width="1.5"/>
+  <line x1="100" y1="60" x2="135" y2="95" stroke="#ecf0f1" stroke-width="1.5"/>
+  <line x1="65" y1="95" x2="75" y2="135" stroke="#ecf0f1" stroke-width="1.5"/>
+  <line x1="135" y1="95" x2="125" y2="135" stroke="#ecf0f1" stroke-width="1.5"/>
+  <line x1="65" y1="95" x2="135" y2="95" stroke="#ecf0f1" stroke-width="1.5"/>
+  <line x1="75" y1="135" x2="125" y2="135" stroke="#ecf0f1" stroke-width="1.5"/>
+  <!-- Engrenagem central -->
+  <circle cx="100" cy="105" r="15" fill="none" stroke="#ecf0f1" stroke-width="2"/>
+  <circle cx="100" cy="105" r="6" fill="#ecf0f1"/>
+  <!-- Texto ASESI -->
+  <text x="100" y="188" text-anchor="middle" font-family="sans-serif" font-size="18" font-weight="bold" fill="#ffffff">ASESI</text>
+</svg>

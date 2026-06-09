@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- USJ - University of Saint Joseph / Universidade São José de Macau -->
+  <circle cx="100" cy="100" r="95" fill="#1a3a6b" stroke="#c8a415" stroke-width="3"/>
+  <!-- Cruz (símbolo católico da USJ) -->
+  <rect x="90" y="30" width="20" height="70" fill="#c8a415"/>
+  <rect x="70" y="45" width="60" height="20" fill="#c8a415"/>
+  <!-- Livro aberto -->
+  <path d="M60 110 L100 125 L140 110 L140 150 L100 165 L60 150 Z" fill="none" stroke="#ffffff" stroke-width="2.5"/>
+  <line x1="100" y1="125" x2="100" y2="165" stroke="#ffffff" stroke-width="2"/>
+  <!-- Texto USJ -->
+  <text x="100" y="188" text-anchor="middle" font-family="serif" font-size="22" font-weight="bold" fill="#ffffff">USJ</text>
+</svg>

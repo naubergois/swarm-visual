@@ -1,0 +1,32 @@
+/* Google-like scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,0.1);
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255,255,255,0.2);
+}
+
+/* Smooth rendering */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animação de respiração para o background */
+@keyframes pulse-grid {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 0.5; }
+}
+
+body {
+  margin: 0;
+  overflow-x: hidden;
+}
