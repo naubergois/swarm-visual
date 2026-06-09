@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { mcpClient, type McpCard, type McpToolInfo } from './mcpClient';
 import { soundPickTask, soundTaskDone, soundMcpConnected, soundError, resumeAudio } from './sounds';
 import { SwarmChat, SwarmChatFAB, type SwarmMessage } from './SwarmChat';
+import { generateCodeWithDeepSeek } from './deepseekClient';
 import roboIcon from './assets/robo-nordestino-chines.png';
 import './App.css';
 
@@ -282,45 +283,6 @@ const McpServerCard = ({ server }: { server: McpServerInfo }) => {
     </motion.div>
   );
 };
-
-// ============================================================
-// MCP KANBAN CARD
-// ============================================================
-const McpKanbanCard = ({ card }: { card: McpCard }) => (
-  <motion.div
-    layout initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}
-    whileHover={{ scale: 1.01, y: -2 }} transition={{ duration: 0.15 }}
-    className={`bg-gray-900/70 border border-gray-800/50 rounded-xl p-4 hover:border-gray-700/50 transition-colors relative overflow-hidden border-l-4 ${
-      card.priority === 1 ? 'border-l-red-500' : card.priority === 2 ? 'border-l-yellow-500' : card.priority === 3 ? 'border-l-blue-500' : 'border-l-gray-600'
-    }`}>
-    <div className="flex items-start justify-between gap-2">
-      <h4 className="text-xs font-semibold text-gray-100 leading-tight flex-1">{card.title}</h4>
-      <span className="text-[9px] bg-gray-800 text-gray-400 px-1.5 py-0.5 rounded shrink-0">{card.id}</span>
-    </div>
-    {card.description && <p className="text-[10px] text-gray-500 mt-2 line-clamp-2 leading-relaxed">{card.description}</p>}
-    <div className="flex items-center gap-2 mt-3 flex-wrap">
-      <span className={`text-[9px] px-2 py-0.5 rounded-full font-medium ${
-        card.column === 'todo' ? 'bg-blue-500/15 text-blue-300' :
-        card.column === 'backlog' ? 'bg-gray-500/15 text-gray-400' :
-        card.column === 'doing' ? 'bg-yellow-500/15 text-yellow-300' : 'bg-green-500/15 text-green-300'
-      }`}>
-        {card.column === 'todo' ? '📝' : card.column === 'backlog' ? '📋' : card.column === 'doing' ? '⚡' : '✅'} {card.column}
-      </span>
-      <span className={`text-[9px] font-medium ${card.priority === 1 ? 'text-red-400' : card.priority === 2 ? 'text-yellow-400' : card.priority === 3 ? 'text-blue-400' : 'text-gray-500'}`}>P{card.priority}</span>
-      {card.skills.slice(0, 3).map(skill => (
-        <span key={skill} className="text-[9px] px-1.5 py-0.5 rounded bg-purple-500/10 text-purple-300">{skill}</span>
-      ))}
-    </div>
-    {card.assignees.length > 0 && (
-      <div className="flex items-center gap-1.5 mt-2.5 pt-2.5 border-t border-gray-800/50">
-        <span className="text-[9px] text-gray-600">👤</span>
-        {card.assignees.map(a => (
-          <span key={a} className="text-[9px] px-1.5 py-0.5 rounded-full bg-gray-800 text-gray-300">{a}</span>
-        ))}
-      </div>
-    )}
-  </motion.div>
-);
 
 // ============================================================
 // ADD TASK FORM
@@ -738,7 +700,7 @@ export function calculateCost(usage: Usage): number {
   ],
 };
 
-function generateTaskResult(task: Task, agentName: string, agentSkill: AgentSkill, duration: number): TaskResult {
+export function _generateTaskResult(task: Task, agentName: string, agentSkill: AgentSkill, duration: number): TaskResult {
   const templates = CODE_TEMPLATES[agentSkill] || CODE_TEMPLATES['dev'];
   const template = templates[Math.floor(Math.random() * templates.length)];
   return {
@@ -932,79 +894,102 @@ const TaskDetailModal = ({ task, onClose }: { task: Task; onClose: () => void })
 };
 
 // ============================================================
-// ROBOT CHAT RESPONSES — Gerador de respostas dos robôs
+// ROBOT CHAT RESPONSES — Gerador de respostas trilíngues dos robôs
 // ============================================================
 interface AgentLike { name: string; skill: string; color: string; }
 
-const ROBOT_RESPONSES: Record<string, string[]> = {
+interface TrilingualResponse {
+  pt: string;
+  en: string;
+  zh: string;
+}
+
+const ROBOT_RESPONSES: Record<string, TrilingualResponse[]> = {
   dev: [
-    'Analisei o código e posso ajudar com isso! Vou criar uma branch e trabalhar na implementação.',
-    'Boa pergunta! Do ponto de vista de arquitetura, sugiro separar em módulos menores.',
-    'Já passei por isso antes. A solução é usar um padrão de Observer para desacoplar os componentes.',
-    'Vou rodar os testes e verificar. Geralmente esse tipo de problema é de tipagem.',
-    'Posso refatorar isso rapidinho. Vou aplicar o princípio de responsabilidade única.',
+    { pt: 'Analisei o código e posso ajudar com isso! Vou criar uma branch e trabalhar na implementação.', en: 'I analyzed the code and can help with that! I\'ll create a branch and work on the implementation.', zh: '我分析了代码，可以帮助处理这个！我将创建一个分支并进行实现。' },
+    { pt: 'Boa pergunta! Do ponto de vista de arquitetura, sugiro separar em módulos menores.', en: 'Great question! From an architecture perspective, I suggest splitting into smaller modules.', zh: '好问题！从架构角度来看，我建议拆分为更小的模块。' },
+    { pt: 'Já passei por isso antes. A solução é usar um padrão de Observer para desacoplar os componentes.', en: 'I\'ve been through this before. The solution is to use an Observer pattern to decouple components.', zh: '我以前遇到过这种情况。解决方案是使用观察者模式来解耦组件。' },
+    { pt: 'Vou rodar os testes e verificar. Geralmente esse tipo de problema é de tipagem.', en: 'I\'ll run the tests and check. Usually this type of problem is a typing issue.', zh: '我将运行测试并检查。通常这类问题是类型问题。' },
+    { pt: 'Posso refatorar isso rapidinho. Vou aplicar o princípio de responsabilidade única.', en: 'I can refactor this quickly. I\'ll apply the single responsibility principle.', zh: '我可以快速重构这个。我将应用单一职责原则。' },
   ],
   frontend: [
-    'Pelo lado da interface, posso melhorar a UX com uma animação suave usando Framer Motion!',
-    'Vou criar o componente com Tailwind. Fica responsivo e bonito. 🎨',
-    'Sugiro usar um estado local com useState e elevar só o que precisar.',
-    'A acessibilidade é importante! Vou garantir que tenha aria-labels e contraste adequado.',
-    'Posso fazer um protótipo rápido com React. Mando o preview em 5 minutos!',
+    { pt: 'Pelo lado da interface, posso melhorar a UX com uma animação suave usando Framer Motion! 🎨', en: 'On the UI side, I can improve the UX with a smooth animation using Framer Motion! 🎨', zh: '在界面方面，我可以使用Framer Motion添加流畅动画来提升用户体验！🎨' },
+    { pt: 'Vou criar o componente com Tailwind. Fica responsivo e bonito.', en: 'I\'ll create the component with Tailwind. It\'ll be responsive and beautiful.', zh: '我将用Tailwind创建组件。它将是响应式且美观的。' },
+    { pt: 'Sugiro usar um estado local com useState e elevar só o que precisar.', en: 'I suggest using local state with useState and lifting only what\'s needed.', zh: '我建议使用useState管理本地状态，只提升必要的内容。' },
+    { pt: 'A acessibilidade é importante! Vou garantir que tenha aria-labels e contraste adequado.', en: 'Accessibility is important! I\'ll make sure it has aria-labels and proper contrast.', zh: '无障碍访问很重要！我会确保有aria标签和适当的对比度。' },
+    { pt: 'Posso fazer um protótipo rápido com React. Mando o preview em 5 minutos!', en: 'I can make a quick prototype with React. I\'ll send the preview in 5 minutes!', zh: '我可以用React快速做一个原型。5分钟内发送预览！' },
   ],
   backend: [
-    'Pelo backend, vou criar uma rota FastAPI com validação de dados via Pydantic.',
-    'O RAG engine pode processar isso. Vou ajustar o prompt para ser mais específico.',
-    'Sugiro cachear essa resposta com Redis para melhorar a performance.',
-    'Vou implementar um endpoint assíncrono. O LangChain vai processar em background.',
-    'A integração com a API está quase pronta. Só falta configurar o middleware de auth.',
+    { pt: 'Pelo backend, vou criar uma rota FastAPI com validação de dados via Pydantic.', en: 'On the backend, I\'ll create a FastAPI route with data validation via Pydantic.', zh: '在后端，我将创建一个带有Pydantic数据验证的FastAPI路由。' },
+    { pt: 'O RAG engine pode processar isso. Vou ajustar o prompt para ser mais específico.', en: 'The RAG engine can process this. I\'ll adjust the prompt to be more specific.', zh: 'RAG引擎可以处理这个。我将调整提示词使其更具体。' },
+    { pt: 'Sugiro cachear essa resposta com Redis para melhorar a performance.', en: 'I suggest caching this response with Redis to improve performance.', zh: '我建议使用Redis缓存此响应以提高性能。' },
+    { pt: 'Vou implementar um endpoint assíncrono. O LangChain vai processar em background.', en: 'I\'ll implement an async endpoint. LangChain will process in the background.', zh: '我将实现一个异步端点。LangChain将在后台处理。' },
+    { pt: 'A integração com a API está quase pronta. Só falta configurar o middleware de auth.', en: 'The API integration is almost ready. Just need to configure the auth middleware.', zh: 'API集成即将完成。只需配置认证中间件。' },
   ],
   database: [
-    'Posso otimizar essa query! Vou adicionar um índice no campo de busca.',
-    'O ChromaDB já tem esses embeddings. Vou fazer uma busca semântica para encontrar.',
-    'Sugiro normalizar essa tabela. Vai melhorar tanto a consulta quanto a manutenção.',
-    'Vou criar um backup antes de migrar. Segurança em primeiro lugar! 🗄️',
-    'Os vetores estão indexados. A busca por similaridade retorna em <100ms.',
+    { pt: 'Posso otimizar essa query! Vou adicionar um índice no campo de busca. 🗄️', en: 'I can optimize that query! I\'ll add an index on the search field. 🗄️', zh: '我可以优化这个查询！我将在搜索字段上添加索引。🗄️' },
+    { pt: 'O ChromaDB já tem esses embeddings. Vou fazer uma busca semântica para encontrar.', en: 'ChromaDB already has those embeddings. I\'ll do a semantic search to find them.', zh: 'ChromaDB已经有这些嵌入向量了。我将进行语义搜索来查找。' },
+    { pt: 'Sugiro normalizar essa tabela. Vai melhorar tanto a consulta quanto a manutenção.', en: 'I suggest normalizing that table. It\'ll improve both querying and maintenance.', zh: '我建议对该表进行规范化。这将改善查询和维护。' },
+    { pt: 'Vou criar um backup antes de migrar. Segurança em primeiro lugar!', en: 'I\'ll create a backup before migrating. Safety first!', zh: '我将在迁移前创建备份。安全第一！' },
+    { pt: 'Os vetores estão indexados. A busca por similaridade retorna em <100ms.', en: 'Vectors are indexed. Similarity search returns in <100ms.', zh: '向量已建立索引。相似性搜索在100毫秒内返回。' },
   ],
   devops: [
-    'Vou preparar o Dockerfile e o docker-compose. Deploy automatizado! 🚀',
-    'O EC2 está configurado. Vou rodar o provision.sh e subir o serviço.',
-    'Sugiro usar um healthcheck no container para restart automático.',
-    'O nginx está com SSL configurado. O certificado renova automaticamente.',
-    'Vou monitorar os logs. Se cair, o systemd reinicia em 5 segundos.',
+    { pt: 'Vou preparar o Dockerfile e o docker-compose. Deploy automatizado! 🚀', en: 'I\'ll prepare the Dockerfile and docker-compose. Automated deploy! 🚀', zh: '我将准备Dockerfile和docker-compose。自动化部署！🚀' },
+    { pt: 'O EC2 está configurado. Vou rodar o provision.sh e subir o serviço.', en: 'EC2 is configured. I\'ll run provision.sh and start the service.', zh: 'EC2已配置。我将运行provision.sh并启动服务。' },
+    { pt: 'Sugiro usar um healthcheck no container para restart automático.', en: 'I suggest using a healthcheck in the container for automatic restart.', zh: '我建议在容器中使用健康检查以实现自动重启。' },
+    { pt: 'O nginx está com SSL configurado. O certificado renova automaticamente.', en: 'Nginx has SSL configured. The certificate renews automatically.', zh: 'Nginx已配置SSL。证书自动续期。' },
+    { pt: 'Vou monitorar os logs. Se cair, o systemd reinicia em 5 segundos.', en: 'I\'ll monitor the logs. If it crashes, systemd restarts in 5 seconds.', zh: '我将监控日志。如果崩溃，systemd会在5秒内重启。' },
   ],
   design: [
-    'Pelo lado visual, sugiro usar uma paleta mais contrastante para acessibilidade.',
-    'Posso criar um ícone SVG animado para representar isso! 🎯',
-    'O layout ficaria melhor com um grid de 3 colunas no desktop.',
-    'Vou desenhar um wireframe rápido. Fica mais fácil visualizar a proposta.',
-    'As cores seguem o design system do projeto. Consistência é tudo! 🎨',
+    { pt: 'Pelo lado visual, sugiro usar uma paleta mais contrastante para acessibilidade. 🎯', en: 'On the visual side, I suggest using a more contrasting palette for accessibility. 🎯', zh: '在视觉方面，我建议使用对比度更高的调色板以提高可访问性。🎯' },
+    { pt: 'Posso criar um ícone SVG animado para representar isso!', en: 'I can create an animated SVG icon to represent that!', zh: '我可以创建一个动画SVG图标来表示这个！' },
+    { pt: 'O layout ficaria melhor com um grid de 3 colunas no desktop.', en: 'The layout would look better with a 3-column grid on desktop.', zh: '桌面端使用3列网格布局会更好看。' },
+    { pt: 'Vou desenhar um wireframe rápido. Fica mais fácil visualizar a proposta.', en: 'I\'ll draw a quick wireframe. It\'ll be easier to visualize the proposal.', zh: '我将快速绘制线框图。这样更容易可视化方案。' },
+    { pt: 'As cores seguem o design system do projeto. Consistência é tudo! 🎨', en: 'Colors follow the project\'s design system. Consistency is everything! 🎨', zh: '颜色遵循项目的设计系统。一致性就是一切！🎨' },
   ],
 };
 
-const COMPLEMENT_RESPONSES: string[] = [
-  'Concordo! Posso complementar com minha expertise.',
-  'Boa! Do meu lado, posso ajudar com a parte de {skill}.',
-  'Enquanto isso eu cuido da parte técnica aqui.',
-  'Legal! Se precisar de suporte na minha área, é só chamar. 🤝',
-  'Tô ligado! Posso começar a preparar o terreno do meu lado.',
-  'Show! Vou ficar de olho e ajudar quando precisar.',
+const COMPLEMENT_RESPONSES: TrilingualResponse[] = [
+  { pt: 'Concordo! Posso complementar com minha expertise.', en: 'Agreed! I can complement with my expertise.', zh: '同意！我可以用我的专业知识来补充。' },
+  { pt: 'Boa! Do meu lado, posso ajudar com a parte de {skill}.', en: 'Nice! On my side, I can help with the {skill} part.', zh: '好的！我这边可以帮助处理{skill}部分。' },
+  { pt: 'Enquanto isso eu cuido da parte técnica aqui.', en: 'Meanwhile I\'ll take care of the technical part here.', zh: '与此同时，我在这里处理技术部分。' },
+  { pt: 'Legal! Se precisar de suporte na minha área, é só chamar. 🤝', en: 'Cool! If you need support in my area, just call. 🤝', zh: '好的！如果在我的领域需要支持，随时叫我。🤝' },
+  { pt: 'Tô ligado! Posso começar a preparar o terreno do meu lado.', en: 'On it! I can start laying the groundwork on my end.', zh: '收到！我可以开始在我这边做准备工作。' },
+  { pt: 'Show! Vou ficar de olho e ajudar quando precisar.', en: 'Great! I\'ll keep an eye and help when needed.', zh: '好的！我会持续关注并在需要时提供帮助。' },
 ];
 
-function generateRobotResponse(userText: string, agent: AgentLike): string {
-  const pool = ROBOT_RESPONSES[agent.skill] || ROBOT_RESPONSES.dev;
-  const base = pool[Math.floor(Math.random() * pool.length)];
+const SKILL_LABELS_TRI: Record<string, { pt: string; en: string; zh: string }> = {
+  dev: { pt: 'Dev', en: 'Dev', zh: '开发' },
+  database: { pt: 'BD', en: 'DB', zh: '数据库' },
+  billing: { pt: 'Billing', en: 'Billing', zh: '计费' },
+  frontend: { pt: 'Front', en: 'Front', zh: '前端' },
+  backend: { pt: 'Back', en: 'Back', zh: '后端' },
+  devops: { pt: 'DevOps', en: 'DevOps', zh: '运维' },
+  design: { pt: 'Design', en: 'Design', zh: '设计' },
+};
 
-  // Se o texto do usuário tem uma pergunta, adicionar "Sobre sua pergunta: "
+function generateRobotResponse(userText: string, agent: AgentLike): { pt: string; en: string; zh: string } {
+  const pool = ROBOT_RESPONSES[agent.skill] || ROBOT_RESPONSES.dev;
+  const response = pool[Math.floor(Math.random() * pool.length)];
+
   if (userText.includes('?')) {
-    return `Sobre sua pergunta: ${base}`;
+    return {
+      pt: `Sobre sua pergunta: ${response.pt}`,
+      en: `About your question: ${response.en}`,
+      zh: `关于你的问题：${response.zh}`,
+    };
   }
-  return base;
+  return response;
 }
 
-function generateComplementResponse(_userText: string, agent: AgentLike): string {
-  const base = COMPLEMENT_RESPONSES[Math.floor(Math.random() * COMPLEMENT_RESPONSES.length)];
-  const skillLabel = SKILL_LABELS[agent.skill] || agent.skill;
-  return base.replace('{skill}', skillLabel);
+export function _generateComplementResponse(_userText: string, agent: AgentLike): { pt: string; en: string; zh: string } {
+  const response = COMPLEMENT_RESPONSES[Math.floor(Math.random() * COMPLEMENT_RESPONSES.length)];
+  const skillTri = SKILL_LABELS_TRI[agent.skill] || SKILL_LABELS_TRI.dev;
+  return {
+    pt: response.pt.replace('{skill}', skillTri.pt),
+    en: response.en.replace('{skill}', skillTri.en),
+    zh: response.zh.replace('{skill}', skillTri.zh),
+  };
 }
 
 // ============================================================
@@ -1029,8 +1014,12 @@ function SwarmApp() {
   const [mcpTools, setMcpTools] = useState<McpToolInfo[]>([]);
   const [mcpConnected, setMcpConnected] = useState(false);
 
+  // Drag-and-drop State
+  const draggedTaskRef = useRef<{ task: Task; sourceCol: ColumnId } | null>(null);
+  const [dragOverCol, setDragOverCol] = useState<ColumnId | null>(null);
+
   // Chat State
-  const [mcpLoading, setMcpLoading] = useState(true);
+  const [, setMcpLoading] = useState(true);
   const [showAddTask, setShowAddTask] = useState(false);
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -1083,7 +1072,7 @@ function SwarmApp() {
     }
   }, [swarmChatOpen]);
 
-  // ── Handle Swarm Chat user message (robôs respondem!) ─────────────────
+  // ── Handle Swarm Chat user message (robôs respondem com DeepSeek!) ─────────────────
   const handleSwarmUserMessage = useCallback((text: string) => {
     addSwarmMessage('Você', text, { type: 'user', action: 'info' });
 
@@ -1102,24 +1091,66 @@ function SwarmApp() {
       responder = agents.find(a => a.skill === 'design') || agents[0];
     }
 
-    // Simular "digitando..." e responder
-    setTimeout(() => {
-      addSwarmMessage(responder.name, generateRobotResponse(text, responder), {
+    // Chamar DeepSeek para resposta real
+    const apiKey = import.meta.env.VITE_DEEPSEEK_API_KEY || '';
+    const baseUrl = import.meta.env.VITE_DEEPSEEK_BASE_URL || 'https://api.deepseek.com';
+    const model = import.meta.env.VITE_DEEPSEEK_MODEL || 'deepseek-chat';
+
+    if (apiKey) {
+      // Resposta real via DeepSeek
+      addSwarmMessage(responder.name, '⏳ Pensando...', {
         agentColor: responder.color,
         action: 'info',
       });
-    }, 800 + Math.random() * 1200);
 
-    // Chance de um segundo robô complementar
-    if (Math.random() > 0.6) {
-      const others = agents.filter(a => a.id !== responder.id);
-      const secondBot = others[Math.floor(Math.random() * others.length)];
-      setTimeout(() => {
-        addSwarmMessage(secondBot.name, generateComplementResponse(text, secondBot), {
-          agentColor: secondBot.color,
-          action: 'info',
+      fetch(`${baseUrl}/v1/chat/completions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${apiKey}` },
+        body: JSON.stringify({
+          model,
+          messages: [
+            {
+              role: 'system',
+              content: `Você é "${responder.name}", um robô agente de IA do projeto USJ/ASESI/CGE (Controladoria Geral do Estado do Ceará). Sua especialidade é ${responder.skill}. Responda de forma concisa, útil e técnica em português. Se a pergunta envolver código, inclua um bloco de código com a linguagem apropriada (use \`\`\`lang). Máximo 800 tokens de resposta.`,
+            },
+            { role: 'user', content: text },
+          ],
+          temperature: 0.7,
+          max_tokens: 800,
+        }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          const reply = data.choices?.[0]?.message?.content || 'Não consegui processar a resposta.';
+          // Remover a mensagem "Pensando..." substituindo pela resposta real
+          setSwarmMessages(prev => {
+            const filtered = prev.filter(m => m.text !== '⏳ Pensando...' || m.fromName !== responder.name);
+            return filtered;
+          });
+          addSwarmMessage(responder.name, reply, {
+            agentColor: responder.color,
+            action: 'info',
+          });
+        })
+        .catch(err => {
+          console.error('DeepSeek chat error:', err);
+          setSwarmMessages(prev => prev.filter(m => m.text !== '⏳ Pensando...' || m.fromName !== responder.name));
+          addSwarmMessage(responder.name, `Erro ao conectar com DeepSeek: ${err.message || 'desconhecido'}`, {
+            agentColor: responder.color,
+            action: 'info',
+          });
         });
-      }, 2500 + Math.random() * 1500);
+    } else {
+      // Fallback: respostas pré-definidas se não tiver API key
+      setTimeout(() => {
+        const response = generateRobotResponse(text, responder);
+        addSwarmMessage(responder.name, response.pt, {
+          agentColor: responder.color,
+          action: 'info',
+          textEn: response.en,
+          textZh: response.zh,
+        });
+      }, 800 + Math.random() * 1200);
     }
   }, [addSwarmMessage, agents]);
 
@@ -1158,6 +1189,49 @@ function SwarmApp() {
       }
     }
   }, [addLog, addSwarmMessage, mcpConnected]);
+
+  // ── Drag-and-Drop Handlers ──────────────────────────────────────────────
+  const handleDragStart = useCallback((e: React.DragEvent, task: Task, sourceCol: ColumnId) => {
+    draggedTaskRef.current = { task, sourceCol };
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', task.id);
+  }, []);
+
+  const handleDragOver = useCallback((e: React.DragEvent, colId: ColumnId) => {
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'move';
+    setDragOverCol(colId);
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setDragOverCol(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent, targetCol: ColumnId) => {
+    e.preventDefault();
+    setDragOverCol(null);
+    const dragged = draggedTaskRef.current;
+    if (!dragged || dragged.sourceCol === targetCol) return;
+
+    const { task, sourceCol } = dragged;
+    draggedTaskRef.current = null;
+
+    // Update local state
+    setColumns(prev => prev.map(col => {
+      if (col.id === sourceCol) return { ...col, tasks: col.tasks.filter(t => t.id !== task.id) };
+      if (col.id === targetCol) return { ...col, tasks: [...col.tasks, { ...task, column: targetCol }] };
+      return col;
+    }));
+
+    // Persist via MCP
+    if (mcpConnected) {
+      mcpClient.moveCard(task.id, targetCol, 'c22f69a564d6').catch(() => {
+        addLog(`⚠️ Falha ao mover card ${task.id} no MCP`);
+      });
+    }
+
+    addLog(`🖱️ Card ${task.id} movido de ${sourceCol} → ${targetCol}`);
+  }, [mcpConnected, addLog]);
 
   // ── Add Task Handler ────────────────────────────────────────────────────
   const handleAddTaskInternal = useCallback(async (taskData: { title: string; description: string; column: ColumnId; priority: number; skill: AgentSkill }) => {
@@ -1307,40 +1381,58 @@ function SwarmApp() {
           const newProgress = Math.min(a.progress + Math.random() * 15, 100);
           if (newProgress >= 100) {
             clearInterval(interval);
-            const taskDuration = 3000 + Math.random() * 5000; // simulated duration
-            const taskResult = generateTaskResult(task, agent.name, agent.skill, taskDuration);
-            const completedTask = { ...task, column: 'done' as const, result: taskResult };
-            setColumns(prev => prev.map(col => {
-              if (col.tasks.some(t => t.id === task.id)) return { ...col, tasks: col.tasks.filter(t => t.id !== task.id) };
-              if (col.id === 'done') return { ...col, tasks: [...col.tasks, completedTask] };
-              return col;
-            }));
-            setAgents(prev => prev.map(a =>
-              a.id === agent.id ? { ...a, status: 'done', tasksDone: a.tasksDone + 1, currentTask: null, progress: 100 } : a
-            ));
-            setStats(prev => ({ ...prev, totalDone: prev.totalDone + 1 }));
-            addLog(`✅ ${agent.name} concluiu ${task.id} — "${task.title}"`);
-            addLog(`   💻 Código gerado: ${taskResult.code ? taskResult.code.split('\n').length : 0} linhas (${taskResult.language})`);
-            // Robô reporta no chat que concluiu a tarefa (trilíngue) com o código gerado
-            const codePreview = taskResult.code
-              ? `\n\n\`\`\`${taskResult.language}\n${taskResult.code}\n\`\`\`\n\n${taskResult.output || ''}`
-              : '';
-            addSwarmMessage(agent.name, `Concluí a tarefa "${task.title}"! ✅ Código gerado (${taskResult.language}).${codePreview}`, {
-              agentColor: agent.color, taskId: task.id, action: 'done',
-              textEn: `Completed task "${task.title}"! ✅ Code generated (${taskResult.language}).${codePreview}`,
-              textZh: `完成了任务"${task.title}"！✅ 已生成代码（${taskResult.language}）。${codePreview}`,
+            // Chamar DeepSeek para gerar código REAL
+            addSwarmMessage(agent.name, `Gerando solução para "${task.title}" com DeepSeek... ⏳`, {
+              agentColor: agent.color, taskId: task.id, action: 'progress',
+              textEn: `Generating solution for "${task.title}" with DeepSeek... ⏳`,
+              textZh: `正在用DeepSeek生成"${task.title}"的解决方案... ⏳`,
             });
-            soundTaskDone();
-            // Tentar mover card no MCP server
-            if (mcpConnected) {
-              mcpClient.moveCard(task.id, 'done', 'c22f69a564d6').catch(() => {});
-            }
-
-            setTimeout(() => {
+            const startTime = Date.now();
+            generateCodeWithDeepSeek(task.title, task.description || '', agent.skill, agent.name).then(deepSeekResult => {
+              const taskDuration = Date.now() - startTime;
+              const taskResult: TaskResult = {
+                agentName: agent.name,
+                agentSkill: agent.skill,
+                completedAt: Date.now(),
+                duration: taskDuration,
+                code: deepSeekResult.code,
+                language: deepSeekResult.language,
+                output: deepSeekResult.output,
+                summary: deepSeekResult.summary,
+              };
+              const completedTask = { ...task, column: 'done' as const, result: taskResult };
+              setColumns(prev => prev.map(col => {
+                if (col.tasks.some(t => t.id === task.id)) return { ...col, tasks: col.tasks.filter(t => t.id !== task.id) };
+                if (col.id === 'done') return { ...col, tasks: [...col.tasks, completedTask] };
+                return col;
+              }));
               setAgents(prev => prev.map(a =>
-                a.id === agent.id ? { ...a, status: 'idle', progress: 0 } : a
+                a.id === agent.id ? { ...a, status: 'done', tasksDone: a.tasksDone + 1, currentTask: null, progress: 100 } : a
               ));
-            }, 1500);
+              setStats(prev => ({ ...prev, totalDone: prev.totalDone + 1 }));
+              addLog(`✅ ${agent.name} concluiu ${task.id} — "${task.title}"`);
+              addLog(`   💻 Código gerado (DeepSeek): ${taskResult.code ? taskResult.code.split('\n').length : 0} linhas (${taskResult.language})`);
+              // Robô reporta no chat com código real gerado pelo DeepSeek
+              const codePreview = taskResult.code
+                ? `\n\n\`\`\`${taskResult.language}\n${taskResult.code}\n\`\`\`\n\n${taskResult.output || ''}`
+                : '';
+              addSwarmMessage(agent.name, `Concluí a tarefa "${task.title}"! ✅ Solução gerada com DeepSeek (${taskResult.language}).${codePreview}`, {
+                agentColor: agent.color, taskId: task.id, action: 'done',
+                textEn: `Completed task "${task.title}"! ✅ Solution generated with DeepSeek (${taskResult.language}).${codePreview}`,
+                textZh: `完成了任务"${task.title}"！✅ 已用DeepSeek生成解决方案（${taskResult.language}）。${codePreview}`,
+              });
+              soundTaskDone();
+              // Tentar mover card no MCP server
+              if (mcpConnected) {
+                mcpClient.moveCard(task.id, 'done', 'c22f69a564d6').catch(() => {});
+              }
+
+              setTimeout(() => {
+                setAgents(prev => prev.map(a =>
+                  a.id === agent.id ? { ...a, status: 'idle', progress: 0 } : a
+                ));
+              }, 1500);
+            });
             return a;
           }
           return { ...a, progress: newProgress };
@@ -1472,7 +1564,11 @@ function SwarmApp() {
 
           <div className="grid grid-cols-6 gap-3">
             {columns.map(col => (
-              <div key={col.id} className="bg-gray-900/50 border border-gray-800/50 rounded-xl p-3 min-h-[300px]">
+              <div key={col.id}
+                onDragOver={(e) => handleDragOver(e, col.id)}
+                onDragLeave={handleDragLeave}
+                onDrop={(e) => handleDrop(e, col.id)}
+                className={`bg-gray-900/50 border rounded-xl p-3 min-h-[300px] transition-colors ${dragOverCol === col.id ? 'border-blue-500/60 bg-blue-900/10' : 'border-gray-800/50'}`}>
                 <div className="flex items-center justify-between mb-3">
                   <h3 className="text-xs font-semibold text-gray-300">{col.title}</h3>
                   <span className="text-[10px] bg-gray-800 text-gray-400 px-2 py-0.5 rounded-full">{col.tasks.length}</span>
@@ -1481,8 +1577,10 @@ function SwarmApp() {
                   <AnimatePresence>
                     {col.tasks.map(task => (
                       <motion.div key={task.id} layout initial={{ opacity: 0, scale: 0.8, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.5, y: -20 }}
+                        draggable
+                        onDragStart={(e) => handleDragStart(e as unknown as React.DragEvent, task, col.id)}
                         onClick={() => setSelectedTask(task)}
-                        className={`bg-gray-800/80 rounded-lg p-2.5 border-l-4 cursor-pointer hover:bg-gray-700/80 transition-colors ${task.priority === 1 ? 'border-l-red-500' : task.priority === 2 ? 'border-l-yellow-500' : task.priority === 3 ? 'border-l-blue-500' : 'border-l-gray-600'} ${task.result ? 'ring-1 ring-green-500/20' : ''}`}>
+                        className={`bg-gray-800/80 rounded-lg p-2.5 border-l-4 cursor-grab active:cursor-grabbing hover:bg-gray-700/80 transition-colors ${task.priority === 1 ? 'border-l-red-500' : task.priority === 2 ? 'border-l-yellow-500' : task.priority === 3 ? 'border-l-blue-500' : 'border-l-gray-600'} ${task.result ? 'ring-1 ring-green-500/20' : ''}`}>
                         <div className="flex items-start justify-between gap-1">
                           <span className="text-[11px] font-medium text-gray-200 leading-tight">{task.title}</span>
                           <span className="text-[8px] bg-gray-700 text-gray-400 px-1 py-0.5 rounded shrink-0">{task.id}</span>
@@ -1517,6 +1615,97 @@ function SwarmApp() {
           </div>
         </section>
 
+        {/* Swarm Trilingual Chat Feed — Inline */}
+        <section>
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">🐝 Chat dos Agentes · Trilíngue</h2>
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] text-gray-500">🇧🇷 PT · 🇺🇸 EN · 🇨🇳 ZH</span>
+              <div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" />
+            </div>
+          </div>
+          <div className="bg-gray-900/70 border border-gray-800/50 rounded-2xl overflow-hidden">
+            {/* Chat messages feed */}
+            <div className="max-h-[420px] overflow-y-auto p-4 space-y-3" style={{ background: 'linear-gradient(180deg, #0f172a 0%, #1e1b4b 100%)' }}>
+              {swarmMessages.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <div className="text-3xl mb-2">🤖</div>
+                  <p className="text-xs">Aguardando os robôs conversarem...</p>
+                </div>
+              )}
+              {swarmMessages.slice(-20).map(msg => (
+                <motion.div
+                  key={msg.id}
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.2 }}
+                  className={`rounded-xl p-3 ${
+                    msg.type === 'system'
+                      ? 'bg-gray-800/40 border border-gray-700/30'
+                      : msg.type === 'user'
+                        ? 'bg-blue-600/20 border border-blue-500/30 ml-12'
+                        : 'bg-gray-800/60 border border-gray-700/30'
+                  }`}
+                  style={msg.type === 'agent' && msg.agentColor ? { borderLeftColor: msg.agentColor, borderLeftWidth: '3px' } : {}}
+                >
+                  {/* Agent header */}
+                  {msg.type === 'agent' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <div className="w-5 h-5 rounded-full flex items-center justify-center text-[9px]"
+                        style={{ backgroundColor: msg.agentColor ? `${msg.agentColor}30` : '#374151' }}>🤖</div>
+                      <span className="text-[10px] font-semibold" style={{ color: msg.agentColor || '#9CA3AF' }}>{msg.fromName}</span>
+                      {msg.taskId && <span className="text-[9px] text-gray-500 font-mono">{msg.taskId}</span>}
+                      {msg.action && <span className="text-[9px]">{msg.action === 'pick' ? '🎯' : msg.action === 'done' ? '✅' : msg.action === 'progress' ? '⚡' : '💬'}</span>}
+                      <span className="text-[9px] text-gray-600 ml-auto">{new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  )}
+                  {msg.type === 'system' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] text-gray-400 font-medium">⚙️ Sistema</span>
+                      <span className="text-[9px] text-gray-600 ml-auto">{new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  )}
+                  {msg.type === 'user' && (
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-[10px] text-blue-300 font-medium">👤 Você</span>
+                      <span className="text-[9px] text-gray-600 ml-auto">{new Date(msg.timestamp).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })}</span>
+                    </div>
+                  )}
+
+                  {/* Trilingual messages - show all 3 languages side by side */}
+                  {(msg.textEn || msg.textZh) ? (
+                    <div className="grid grid-cols-3 gap-2">
+                      <div className="bg-gray-900/50 rounded-lg p-2 border border-gray-700/20">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[9px]">🇧🇷</span>
+                          <span className="text-[8px] text-gray-500 font-medium">PT</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-gray-200 whitespace-pre-wrap">{msg.text}</p>
+                      </div>
+                      <div className="bg-gray-900/50 rounded-lg p-2 border border-gray-700/20">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[9px]">🇺🇸</span>
+                          <span className="text-[8px] text-gray-500 font-medium">EN</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-gray-200 whitespace-pre-wrap">{msg.textEn || msg.text}</p>
+                      </div>
+                      <div className="bg-gray-900/50 rounded-lg p-2 border border-gray-700/20">
+                        <div className="flex items-center gap-1 mb-1">
+                          <span className="text-[9px]">🇨🇳</span>
+                          <span className="text-[8px] text-gray-500 font-medium">ZH</span>
+                        </div>
+                        <p className="text-[11px] leading-relaxed text-gray-200 whitespace-pre-wrap">{msg.textZh || msg.text}</p>
+                      </div>
+                    </div>
+                  ) : (
+                    <p className="text-[11px] leading-relaxed text-gray-200 whitespace-pre-wrap">{msg.text}</p>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
         {/* MCP Server Card */}
         <section>
           <div className="flex items-center justify-between mb-4">
@@ -1526,46 +1715,7 @@ function SwarmApp() {
           <McpServerCard server={mcpServer} />
         </section>
 
-        {/* MCP Cards do Projeto */}
-        <section>
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-sm font-semibold text-gray-400 uppercase tracking-wider">📋 Cards do Projeto (MCP · time USJASESI)</h2>
-            <div className="flex items-center gap-3 text-[11px]">
-              {mcpConnected ? (
-                <span className="flex items-center gap-1.5 text-green-400"><div className="w-1.5 h-1.5 rounded-full bg-green-400 animate-pulse" /> Live · {mcpCards.length} cards</span>
-              ) : mcpLoading ? (
-                <span className="text-yellow-400">⏳ Carregando...</span>
-              ) : (
-                <span className="text-red-400">❌ Offline</span>
-              )}
-            </div>
-          </div>
 
-          {mcpLoading && (
-            <div className="text-center py-12 text-gray-500 text-sm">
-              <motion.div animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: 'linear' }} className="inline-block text-2xl mb-3">⚙️</motion.div>
-              <p>Conectando ao MCP server qclaw-cards (localhost:9200)...</p>
-            </div>
-          )}
-
-          {!mcpLoading && !mcpConnected && (
-            <div className="text-center py-8 bg-gray-900/50 border border-gray-800/50 rounded-xl">
-              <p className="text-gray-500 text-sm">❌ Não foi possível conectar ao servidor MCP</p>
-              <p className="text-gray-600 text-xs mt-1">Verifique se o qclaw-cards está rodando em localhost:9200</p>
-              <p className="text-gray-600 text-[10px] mt-2 font-mono">python -m qclawmonitor.mcp_sse_server --port 9200</p>
-            </div>
-          )}
-
-          {!mcpLoading && mcpCards.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-              {mcpCards.map((card, idx) => (
-                <motion.div key={`${card._team_id}-${card.id}`} transition={{ delay: idx * 0.03 }}>
-                  <McpKanbanCard card={card} />
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </section>
 
         {/* Logs */}
         <section>

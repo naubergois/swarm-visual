@@ -15,6 +15,12 @@ if [ ! -d "node_modules" ]; then
   npm install
 fi
 
+echo "🎯 Iniciando MCP server qclaw-cards (SSE :9200)..."
+node server/mcp-server.mjs &
+MCP_PID=$!
+
+sleep 1
+
 echo "📱 Iniciando wacli-bridge (WebSocket :9300)..."
 node server/wacli-bridge.mjs &
 WACLI_PID=$!
@@ -25,6 +31,7 @@ sleep 1
 echo "🚀 Iniciando servidor de desenvolvimento (Vite :5173)..."
 echo ""
 echo "   🌐 Frontend:     http://localhost:5173"
+echo "   🎯 MCP server:   http://localhost:9200 (qclaw-cards)"
 echo "   📱 wacli-bridge: ws://localhost:9300"
 echo ""
 echo "   O chat WhatsApp (wacli) aparece no canto inferior direito!"
@@ -35,6 +42,7 @@ echo ""
 cleanup() {
   echo ""
   echo "🛑 Parando serviços..."
+  kill $MCP_PID 2>/dev/null
   kill $WACLI_PID 2>/dev/null
   exit 0
 }
@@ -43,4 +51,5 @@ trap cleanup SIGINT SIGTERM
 npx vite --host
 
 # Cleanup on exit
+kill $MCP_PID 2>/dev/null
 kill $WACLI_PID 2>/dev/null

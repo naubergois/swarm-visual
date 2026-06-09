@@ -1,16 +1,16 @@
 # 🤖 Swarm Visual — Enxame de Agentes IA
 
 <p align="center">
-  <img src="public/logo-cge.svg" alt="CGE - Controladoria Geral do Estado" width="120" />
+  <img src="public/logo-cge.svg" alt="CGE - Controladoria e Ouvidoria Geral do Estado do Ceará" width="120" />
   &nbsp;&nbsp;&nbsp;
-  <img src="public/logo-usj.svg" alt="USJ - Universidade São José" width="120" />
+  <img src="public/logo-usj.svg" alt="USJ - University of Saint Joseph, Macau" width="120" />
   &nbsp;&nbsp;&nbsp;
   <img src="public/logo-asesi.svg" alt="ASESI - Assessoria Especial de Sistemas de Informação" width="120" />
 </p>
 
 <p align="center">
-  <strong>CGE</strong> · Controladoria Geral do Estado &nbsp;|&nbsp;
-  <strong>USJ</strong> · Universidade São José &nbsp;|&nbsp;
+  <strong>CGE</strong> · Controladoria e Ouvidoria Geral do Estado do Ceará &nbsp;|&nbsp;
+  <strong>USJ</strong> · University of Saint Joseph, Macau &nbsp;|&nbsp;
   <strong>ASESI</strong> · Assessoria Especial de Sistemas de Informação
 </p>
 
@@ -36,29 +36,13 @@
 
 ## 🏛️ Instituições
 
-### CGE — Controladoria Geral do Estado
+| Logo | Instituição | Site Oficial |
+|------|------------|--------------|
+| <img src="public/logo-cge.svg" width="60" /> | **CGE** — Controladoria e Ouvidoria Geral do Estado do Ceará | [cge.ce.gov.br](https://cge.ce.gov.br) |
+| <img src="public/logo-usj.svg" width="60" /> | **USJ** — University of Saint Joseph, Macau | [usj.edu.mo](https://www.usj.edu.mo) |
+| <img src="public/logo-asesi.svg" width="60" /> | **ASESI** — Assessoria Especial de Sistemas de Informação | — |
 
-<img src="public/logo-cge.svg" alt="CGE" width="80" align="left" style="margin-right: 16px" />
-
-Órgão responsável pelo controle interno, auditoria e fiscalização da administração pública estadual. O projeto visa otimizar processos de governança e conformidade através de agentes inteligentes.
-
-<br clear="left" />
-
-### USJ — Universidade São José
-
-<img src="public/logo-usj.svg" alt="USJ" width="80" align="left" style="margin-right: 16px" />
-
-Parceria acadêmica com a Universidade São José de Macau, trazendo expertise em pesquisa e inovação tecnológica, especialmente em inteligência artificial e processamento de linguagem natural.
-
-<br clear="left" />
-
-### ASESI — Assessoria Especial de Sistemas de Informação
-
-<img src="public/logo-asesi.svg" alt="ASESI" width="80" align="left" style="margin-right: 16px" />
-
-Unidade responsável pela infraestrutura de sistemas de informação, coordenando a implementação técnica dos agentes IA e integrações com os sistemas existentes.
-
-<br clear="left" />
+> **Nota:** Para substituir pelos logos oficiais, baixe as imagens dos sites acima e substitua os arquivos em `public/`.
 
 ---
 
@@ -74,14 +58,8 @@ Unidade responsável pela infraestrutura de sistemas de informação, coordenand
 ## 🛠️ Como Executar
 
 ```bash
-# Instalar dependências
 npm install
-
-# Iniciar servidor de desenvolvimento
 npm run dev
-
-# Build para produção
-npm run build
 ```
 
 ## 📁 Estrutura
@@ -89,18 +67,17 @@ npm run build
 ```
 swarm-visual/
 ├── public/
-│   ├── logo-cge.svg          # Logo CGE
-│   ├── logo-usj.svg          # Logo USJ
-│   ├── logo-asesi.svg        # Logo ASESI
-│   └── robo-nordestino-chines.png  # Mascote
+│   ├── logo-cge.svg
+│   ├── logo-usj.svg
+│   ├── logo-asesi.svg
+│   └── robo-nordestino-chines.png
 ├── src/
-│   ├── App.tsx               # Componente principal
-│   ├── App.css               # Estilos
+│   ├── App.tsx
+│   ├── App.css
 │   ├── assets/
 │   │   └── robo-nordestino-chines.png
 │   └── main.tsx
-├── package.json
-└── vite.config.ts
+└── package.json
 ```
 
 ---
